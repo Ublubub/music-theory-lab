@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Music Theory Lab</title>
+  <meta name="description" content="Learn music theory visually: scales, scale degrees, chords, harmonic function, progressions and the guitar fretboard.">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">♪</span>
+      <div>
+        <h1>Music Theory Lab</h1>
+        <p class="tagline">Scales → degrees → chords → progressions, on the fretboard</p>
+      </div>
+    </div>
+    <div class="key-picker" aria-label="Key">
+      <label>Key <select id="key-root"></select></label>
+      <label>Scale <select id="key-scale"></select></label>
+    </div>
+  </header>
+
+  <main>
+    <section class="fb-panel panel">
+      <div class="panel-head">
+        <p id="fb-caption" class="fb-caption"></p>
+        <div class="btn-row">
+          <button id="fb-show-scale" class="btn" hidden>Show scale</button>
+          <label class="inline">Labels
+            <select id="label-mode">
+              <option value="name">Note names</option>
+              <option value="degree">Degrees / intervals</option>
+            </select>
+          </label>
+          <label class="inline">Tuning <select id="tuning"></select></label>
+          <label class="inline">Frets
+            <select id="frets"><option>12</option><option>15</option><option>22</option></select>
+          </label>
+        </div>
+      </div>
+      <div id="fretboard" class="fb-scroll"></div>
+      <div id="fb-legend" class="fb-legend" hidden>
+        <span><i class="sw role-root"></i>Root</span>
+        <span><i class="sw role-third"></i>3rd</span>
+        <span><i class="sw role-fifth"></i>5th</span>
+        <span><i class="sw role-seventh"></i>7th</span>
+        <span><i class="sw role-ext"></i>Other / extension</span>
+        <span><i class="sw role-ghost"></i>Scale note (not in chord)</span>
+      </div>
+    </section>
+
+    <nav id="tabs" class="tabs" role="tablist"></nav>
+    <div id="content"></div>
+  </main>
+
+  <footer class="footer">
+    Music Theory Lab · open source · click anything with a note on it to hear it
+  </footer>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/theory.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/fretboard.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
