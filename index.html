@@ -4,43 +4,57 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Music Theory Lab</title>
-  <meta name="description" content="Learn music theory visually: scales, scale degrees, chords, harmonic function, progressions and the guitar fretboard.">
+  <meta name="description" content="Learn music theory visually: scales, scale degrees, chords, harmonic function, progressions, ear training and the guitar fretboard.">
+  <meta name="theme-color" content="#12141a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <header class="topbar">
+  <header class="topbar no-print">
     <div class="brand">
       <span class="logo" aria-hidden="true">♪</span>
       <div>
         <h1>Music Theory Lab</h1>
-        <p class="tagline">Scales → degrees → chords → progressions, on the fretboard</p>
+        <p class="tagline">Scales → degrees → chords → progressions → songs, on the fretboard</p>
       </div>
     </div>
     <div class="key-picker" aria-label="Key">
       <label>Key <select id="key-root"></select></label>
       <label>Scale <select id="key-scale"></select></label>
+      <label>Sound <select id="instrument"></select></label>
+      <button class="btn" data-action="share" title="Copy a link to this key, progression and tab">🔗 Share</button>
     </div>
   </header>
 
   <main>
-    <section class="fb-panel panel">
+    <section class="fb-panel panel no-print">
       <div class="panel-head">
         <p id="fb-caption" class="fb-caption"></p>
-        <div class="btn-row">
+        <div class="btn-row fb-controls">
           <button id="fb-show-scale" class="btn" hidden>Show scale</button>
+          <label class="inline" id="position-wrap">Position <select id="position"></select></label>
+          <label class="inline">View
+            <select id="view">
+              <option value="guitar">Guitar</option>
+              <option value="piano">Piano</option>
+              <option value="both">Both</option>
+            </select>
+          </label>
           <label class="inline">Labels
             <select id="label-mode">
               <option value="name">Note names</option>
-              <option value="degree">Degrees / intervals</option>
+              <option value="degree">Degrees</option>
             </select>
           </label>
           <label class="inline">Tuning <select id="tuning"></select></label>
-          <label class="inline">Frets
-            <select id="frets"><option>12</option><option>15</option><option>22</option></select>
-          </label>
+          <label class="inline">Frets <select id="fret-from"></select>–<select id="fret-to"></select></label>
+          <label class="inline"><input id="lefty" type="checkbox"> Left-handed</label>
         </div>
       </div>
       <div id="fretboard" class="fb-scroll"></div>
+      <div id="piano" class="fb-scroll piano-wrap" hidden></div>
       <div id="fb-legend" class="fb-legend" hidden>
         <span><i class="sw role-root"></i>Root</span>
         <span><i class="sw role-third"></i>3rd</span>
@@ -49,20 +63,29 @@
         <span><i class="sw role-ext"></i>Other / extension</span>
         <span><i class="sw role-ghost"></i>Scale note (not in chord)</span>
       </div>
+      <div id="shapes" class="shapes" hidden></div>
     </section>
 
-    <nav id="tabs" class="tabs" role="tablist"></nav>
+    <nav id="tabs" class="tabs no-print" role="tablist"></nav>
     <div id="content"></div>
   </main>
 
-  <footer class="footer">
-    Music Theory Lab · open source · click anything with a note on it to hear it
+  <footer class="footer no-print">
+    Music Theory Lab · <a href="https://github.com/Ublubub/music-theory-lab">open source on GitHub</a> · click anything with a note on it to hear it
   </footer>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="js/theory.js"></script>
+  <script src="js/guitar.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/fretboard.js"></script>
+  <script src="js/piano.js"></script>
+  <script src="js/mic.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/tabs/progressions.js"></script>
+  <script src="js/tabs/advanced.js"></script>
+  <script src="js/tabs/ear.js"></script>
+  <script src="js/tabs/find.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>
