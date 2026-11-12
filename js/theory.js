@@ -198,7 +198,7 @@
 
     ['add9', 'Add 9', 'add9', ['P1', 'M3', 'P5', 'M9'], 'Extended', false, 'add9'],
     ['madd9', 'Minor add 9', 'm(add9)', ['P1', 'm3', 'P5', 'M9'], 'Extended', true, 'add9'],
-    ['69', 'Six-nine', '6/9', ['P1', 'M3', 'P5', 'M6', 'M9'], 'Extended', false, '6/9'],
+    ['69', 'Six-nine', '6/9', ['P1', 'M3', 'P5', 'M6', 'M9'], 'Extended', false, '69'],
     ['maj9', 'Major 9th', 'maj9', ['P1', 'M3', 'P5', 'M7', 'M9'], 'Extended', false, 'maj9'],
     ['9', 'Dominant 9th', '9', ['P1', 'M3', 'P5', 'm7', 'M9'], 'Extended', false, '9'],
     ['m9', 'Minor 9th', 'm9', ['P1', 'm3', 'P5', 'm7', 'M9'], 'Extended', true, '9'],
@@ -265,22 +265,50 @@
    * Analyse a chord inside a key. Roman numerals are always written relative to the
    * MAJOR scale of the tonic, so in A minor the C chord is ♭III (pop/jazz convention).
    */
-  function analyzeChord(keyRootName, scaleKey, chordRootName, typeKey) {
-    const tonic = parseNote(keyRootName);
-    const root = parseNote(chordRootName);
+  /** Plain Roman numeral of a chord root + type relative to a tonic (no slash). */
+  function numeralOf(tonic, root, typeKey) {
     const type = CHORD_TYPES[typeKey];
     const deg = mod(root.letter - tonic.letter, 7) + 1;
     const semis = mod(pc(root) - pc(tonic), 12);
     const acc = mod(semis - MAJOR_SEMIS[deg - 1] + 6, 12) - 6;
     const base = type.minor ? ROMAN[deg - 1].toLowerCase() : ROMAN[deg - 1];
-    const numeral = accidentalStr(acc) + base + type.numeral;
-    const fn = (acc < 0 && FUNCTION_FLAT_ROOT[deg]) || FUNCTION_BY_DEGREE[deg - 1];
+    return { text: accidentalStr(acc) + base + type.numeral, deg, acc };
+  }
+
+  /**
+   * opts.bass:    a note for slash chords / inversions (C/E)
+   * opts.applied: { numeral } for secondary dominants (V7/ii): function becomes Dominant
+   */
+  function analyzeChord(keyRootName, scaleKey, chordRootName, typeKey, opts = {}) {
+    const tonic = parseNote(keyRootName);
+    const root = parseNote(chordRootName);
+    const type = CHORD_TYPES[typeKey];
+    const { text, deg, acc } = numeralOf(tonic, root, typeKey);
     const notes = chordNotes(root, typeKey);
+    let numeral = text;
+    let name = noteName(root) + type.symbol;
+    let bass = null;
+    let inversion = 0;
+    if (opts.bass) {
+      bass = parseNote(opts.bass);
+      if (pc(bass) !== pc(root)) {
+        name += `/${noteName(bass)}`;
+        const tone = notes.find((n) => n.pc === pc(bass));
+        if (tone) {
+          numeral += `/${tone.interval.deg}`;
+          inversion = { 3: 1, 2: 1, 4: 1, 5: 2, 7: 3 }[tone.interval.deg] || 0;
+        } else {
+          numeral += `/${noteName(bass)}`;
+        }
+      } else bass = null;
+    }
+    if (opts.applied) numeral = opts.applied.numeral + numeral.slice(text.length);
+    const fn = opts.applied ? 'D' : (acc < 0 && FUNCTION_FLAT_ROOT[deg]) || FUNCTION_BY_DEGREE[deg - 1];
     const scalePcs = new Set(buildScale(tonic, scaleKey).map((n) => n.pc));
     const outside = notes.filter((n) => !scalePcs.has(n.pc));
     return {
-      root, type: typeKey, name: noteName(root) + type.symbol, typeName: type.name,
-      numeral, degree: deg, acc, fn, notes, diatonic: outside.length === 0, outside,
+      root, type: typeKey, name, typeName: type.name, numeral, degree: deg, acc, fn, notes, bass, inversion,
+      applied: opts.applied || null, diatonic: outside.length === 0 && (!bass || scalePcs.has(pc(bass))), outside,
     };
   }
 
@@ -305,8 +333,42 @@
     'l|h7': 'ø7', 'l|(maj7)': 'maj7', 'l|M7': 'maj7',
   };
 
-  /** Read a Roman numeral like "V7", "bVII", "iiø7", "vii°" in a key. */
+  const NUMERAL_RE = /^([b#♭♯]*)(VII|VI|V|IV|III|II|I|vii|vi|v|iv|iii|ii|i)/;
+
+  /**
+   * Read a Roman numeral in a key. Supports:
+   *   "V7", "bVII", "iiø7", "vii°"       plain numerals
+   *   "V7/ii", "vii°7/V"                 secondary (applied) chords
+   *   "I/3", "V7/7"                      inversions (bass = that chord tone)
+   *   "IV/C"                             slash chord with any bass note
+   * Returns { root, type, bass?, applied? } ready for analyzeChord(…, opts).
+   */
   function parseNumeral(str, keyRootName) {
+    const s = String(str).trim().replace('6/9', '69'); // the 6/9 chord name contains a slash
+    const slash = s.indexOf('/');
+    if (slash < 0) return parseSimpleNumeral(s, keyRootName);
+    const left = s.slice(0, slash);
+    const right = s.slice(slash + 1);
+    if (/^\d+$/.test(right)) {
+      const c = parseSimpleNumeral(left, keyRootName);
+      const tone = chordNotes(c.root, c.type).find((n) => n.interval.deg === Number(right));
+      if (!tone) throw new Error(`"${str}": the chord has no ${right} to put in the bass`);
+      return { ...c, bass: tone.note };
+    }
+    if (NUMERAL_RE.test(right)) {
+      const target = parseNumeral(right, keyRootName);
+      const c = parseSimpleNumeral(left, target.root);
+      const leftText = numeralOf(target.root, c.root, c.type).text;
+      const rightText = analyzeChord(keyRootName, 'major', target.root, target.type, target).numeral;
+      return { ...c, applied: { numeral: `${leftText}/${rightText}`, target: rightText } };
+    }
+    const c = parseSimpleNumeral(left, keyRootName);
+    try { return { ...c, bass: parseNote(right) }; } catch (e) {
+      throw new Error(`"${str}": can't read "${right}" after the slash (use 3/5/7, a note, or a numeral)`);
+    }
+  }
+
+  function parseSimpleNumeral(str, keyRootName) {
     const s = String(str).trim().replace(/♭/g, 'b').replace(/♯/g, '#');
     const m = /^([b#]*)(VII|VI|V|IV|III|II|I|vii|vi|v|iv|iii|ii|i)(.*)$/.exec(s);
     if (!m) throw new Error(`"${str}" is not a Roman numeral (try I, ii, V7, bVII…)`);
@@ -331,8 +393,8 @@
     const errors = [];
     tokens.forEach((tok) => {
       try {
-        const { root, type } = parseNumeral(tok, keyRootName);
-        chords.push(analyzeChord(keyRootName, scaleKey, root, type));
+        const p = parseNumeral(tok, keyRootName);
+        chords.push(analyzeChord(keyRootName, scaleKey, p.root, p.type, p));
       } catch (e) { errors.push(e.message); }
     });
     return { chords, errors };
@@ -370,6 +432,13 @@
       candidates.push(analyzeChord(keyRootName, scaleKey, v, sevenths ? '7' : 'maj'));
     }
     const last = progression[progression.length - 1];
+    if (last && last.applied) {
+      // A secondary dominant wants to resolve to the chord it points at.
+      const target = parseNumeral(last.applied.target, keyRootName);
+      const t = analyzeChord(keyRootName, scaleKey, target.root, target.type);
+      return [{ chord: t, score: 5, reasons: [`${last.numeral} is the dominant of ${t.numeral}: resolve to it`] }]
+        .concat(candidates.filter((c) => c.name !== t.name).map((c) => ({ chord: c, score: 0, reasons: ['Deceptive: dodge the expected resolution'] })));
+    }
     if (!last) {
       return candidates.map((c) => ({ chord: c, score: c.degree === 1 ? 3 : c.fn === 'T' ? 1 : 0,
         reasons: [c.degree === 1 ? 'Start at home (the tonic)' : c.fn === 'T' ? 'A tonic-family chord also feels like home' : 'Starting away from home creates mystery'] }))
@@ -474,6 +543,94 @@
   const intervalName = (fromPc, toPc) => SEMITONE_NAMES[mod(toPc - fromPc, 12)];
 
   // ---------------------------------------------------------------------------
+  // Advanced harmony
+  // ---------------------------------------------------------------------------
+
+  /** V(7)/x for every major or minor diatonic chord except I. */
+  function secondaryDominants(keyRootName, scaleKey, sevenths = true) {
+    return diatonicChords(keyRootName, scaleKey)
+      .filter((t) => t.degree !== 1 && (t.type === 'maj' || t.type === 'min'))
+      .map((target) => {
+        const root = transpose(target.root, 'P5');
+        const type = sevenths ? '7' : 'maj';
+        const applied = { numeral: `${sevenths ? 'V7' : 'V'}/${target.numeral}`, target: target.numeral };
+        const chord = analyzeChord(keyRootName, scaleKey, root, type, { applied });
+        const leading = transpose(target.root, 'M7'); // the note that pulls up to the target
+        return { chord, target, leadingTone: noteName(leading) };
+      });
+  }
+
+  /** Tritone substitutions: a dominant 7th a tritone away shares the same 3rd and 7th. */
+  function tritoneSubs(keyRootName, scaleKey) {
+    const v = transpose(parseNote(keyRootName), 'P5');
+    const dominants = [{ chord: analyzeChord(keyRootName, scaleKey, v, '7'), label: 'V7', target: 'I' }]
+      .concat(secondaryDominants(keyRootName, scaleKey).map((s) => ({ chord: s.chord, label: s.chord.numeral, target: s.target.numeral })));
+    return dominants.map((d) => {
+      const subRoot = transpose(d.chord.root, 'd5');
+      const sub = analyzeChord(keyRootName, scaleKey, subRoot, '7');
+      const shared = d.chord.notes.filter((n) => n.role === 'third' || n.role === 'seventh').map((n) => n.name);
+      return { original: d.chord, label: d.label, target: d.target, sub, shared };
+    });
+  }
+
+  const INTERCHANGE_SOURCES = ['major', 'minor', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'harmonicMinor', 'melodicMinor'];
+
+  /** Chords borrowed from parallel scales (same tonic) that aren't already in the key. */
+  function borrowedChords(keyRootName, scaleKey, sevenths = false) {
+    const own = new Set(diatonicChords(keyRootName, scaleKey, sevenths).map((c) => c.name));
+    const family = SCALES[scaleKey].family;
+    const sources = INTERCHANGE_SOURCES.filter((s) => s !== scaleKey)
+      .sort((a, b) => (SCALES[b].family !== family) - (SCALES[a].family !== family));
+    return sources.map((src) => ({
+      scaleKey: src,
+      name: SCALES[src].name,
+      chords: diatonicChords(keyRootName, src, sevenths)
+        .filter((c) => !own.has(c.name))
+        .map((c) => analyzeChord(keyRootName, scaleKey, c.root, c.type)),
+    })).filter((g) => g.chords.length);
+  }
+
+  /** Chords that belong to both keys: the "doorways" for modulating. */
+  function pivotChords(keyA, scaleA, keyB, scaleB, sevenths = false) {
+    const B = diatonicChords(keyB, scaleB, sevenths);
+    return diatonicChords(keyA, scaleA, sevenths).flatMap((a) => {
+      const b = B.find((x) => pc(x.root) === pc(a.root) && x.type === a.type);
+      return b ? [{ chord: a, inA: a.numeral, inB: b.numeral, fnA: a.fn, fnB: b.fn }] : [];
+    });
+  }
+
+  /** The closely related keys: one for each major/minor chord of the key (except I). */
+  function closeKeys(keyRootName, scaleKey) {
+    return diatonicChords(keyRootName, scaleKey)
+      .filter((c) => (c.type === 'maj' || c.type === 'min') && c.degree !== 1)
+      .map((c) => ({ root: asciiName(c.root), scaleKey: c.type === 'maj' ? 'major' : 'minor', numeral: c.numeral, name: `${noteName(c.root)} ${c.type === 'maj' ? 'major' : 'minor'}` }));
+  }
+
+  /** Circle of fifths, clockwise from C. */
+  const CIRCLE = [
+    ['C', 'A'], ['G', 'E'], ['D', 'B'], ['A', 'F#'], ['E', 'C#'], ['B', 'G#'],
+    ['F#', 'D#'], ['Db', 'Bb'], ['Ab', 'F'], ['Eb', 'C'], ['Bb', 'G'], ['F', 'D'],
+  ].map(([major, minor]) => ({ major, minor }));
+
+  /** Sharps or flats in a key signature, e.g. { count: 2, type: '♯', notes: ['F♯','C♯'] }. */
+  function keySignature(keyRootName, scaleKey) {
+    const notes = buildScale(keyRootName, scaleKey).filter((n) => n.note.acc !== 0);
+    const sharp = notes.some((n) => n.note.acc > 0);
+    // Order accidentals the way they're written: F C G D A E B for sharps, reverse for flats.
+    const order = sharp ? 'FCGDAEB' : 'BEADGCF';
+    notes.sort((a, b) => order.indexOf(LETTERS[a.note.letter]) - order.indexOf(LETTERS[b.note.letter]));
+    return { count: notes.length, type: notes.length ? (sharp ? '♯' : '♭') : '', notes: notes.map((n) => n.name) };
+  }
+
+  /** Index on the circle of the major key that has the same notes as this scale (null if none). */
+  function circleIndex(keyRootName, scaleKey) {
+    const set = buildScale(keyRootName, scaleKey).map((n) => n.pc).sort((a, b) => a - b).join();
+    if (buildScale(keyRootName, scaleKey).length !== 7) return null;
+    const i = CIRCLE.findIndex((k) => buildScale(k.major, 'major').map((n) => n.pc).sort((a, b) => a - b).join() === set);
+    return i < 0 ? null : i;
+  }
+
+  // ---------------------------------------------------------------------------
   // Ready-made progressions (written as Roman numerals, so they work in any key)
   // ---------------------------------------------------------------------------
   const PRESETS = [
@@ -485,6 +642,10 @@
     { name: 'Royal road', family: 'major', numerals: 'IVmaj7 V7 iii7 vi7', note: 'A J-pop favourite.' },
     { name: 'Mixolydian rock', family: 'major', numerals: 'I bVII IV I', note: 'Borrowed ♭VII: classic rock.' },
     { name: 'Minor plagal', family: 'major', numerals: 'I IV iv I', note: 'Borrowed iv: bittersweet.' },
+    { name: 'Secondary-dominant pop', family: 'major', numerals: 'I V7/vi vi IV', note: 'V7/vi gives the vi chord extra pull.' },
+    { name: 'Ragtime circle', family: 'major', numerals: 'V7/vi V7/ii V7/V V7 I', note: 'A chain of dominants falling in 5ths.' },
+    { name: 'Tritone-sub ii–V–I', family: 'major', numerals: 'ii7 bII7 Imaj7', note: '♭II7 replaces V7: chromatic bass line.' },
+    { name: 'Descending bass', family: 'major', numerals: 'I V/3 vi I/5 IV I/3 ii V', note: 'Inversions make the bass walk down step by step.' },
     { name: 'Aeolian vamp', family: 'minor', numerals: 'i bVII bVI bVII', note: 'Rock and film-score minor.' },
     { name: 'Andalusian cadence', family: 'minor', numerals: 'i bVII bVI V', note: 'Flamenco. The V comes from harmonic minor.' },
     { name: 'Epic minor', family: 'minor', numerals: 'i bVI bIII bVII', note: 'Anthemic minor pop.' },
@@ -494,9 +655,10 @@
 
   return {
     LETTERS, KEY_ROOTS, COMMON_SPELLING, INTERVALS, INTERVAL_CHARACTER, SCALES, CHORD_TYPES, CHORD_LIST, CHORD_CATEGORIES,
-    FUNCTIONS, PRESETS, ROMAN,
+    FUNCTIONS, PRESETS, ROMAN, CIRCLE,
     mod, parseNote, pc, noteName, asciiName, pcName, transpose,
     buildScale, stepPattern, chordNotes, chordSymbol, analyzeChord, diatonicChords,
     parseNumeral, parseProgression, suggestNext, detectCadence, findKeys, identifyChords, intervalName,
+    secondaryDominants, tritoneSubs, borrowedChords, pivotChords, closeKeys, keySignature, circleIndex,
   };
 });
