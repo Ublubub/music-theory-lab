@@ -1,44 +1,36 @@
 # Roadmap
 
-Status: ✅ done · 🔜 planned next · 💡 idea, needs your decision
+Status: ✅ done · 🔜 planned · 💡 idea, needs your decision
 
-## v0.1: Foundations ✅
+## v0.1: Foundations ✅ (2026-11-12)
 
-- ✅ Theory engine with correct spelling (letters + accidentals)
-- ✅ 12 scales and modes, scale degrees, Roman numerals, degree names, step patterns
-- ✅ Diatonic triads and 7th chords with harmonic function (T / S / D)
-- ✅ Chord builder with 33 chord types
-- ✅ Progression builder: numeral input, presets, next-chord suggestions, cadence detection, playback
-- ✅ Intervals reference with playback
-- ✅ Key and chord finder from notes (first note weighted as tonic)
-- ✅ Interactive fretboard: roles, labels, tunings, click to play
-- ✅ Automated tests for the theory engine (and CI on GitHub)
+- ✅ Theory engine with correct spelling, 12 scales/modes, degrees, Roman numerals
+- ✅ Diatonic chords with harmonic function, chord builder (33 types)
+- ✅ Progression builder: numeral input, presets, next-chord suggestions, cadences, playback
+- ✅ Intervals reference, key and chord finder, interactive fretboard, tests and CI
 
-## v0.2: Advanced harmony 🔜
+## v0.2: Advanced harmony, guitar tools and extras ✅ (2026-11-12)
 
-The "advanced music theory" part of the original idea:
+- ✅ Secondary dominants (`V7/ii`), inversions (`I/3`), slash chords (`IV/C`)
+- ✅ Tritone substitutions, borrowed chords (modal interchange), modulation with pivot chords
+- ✅ Playable chord shapes with chord diagrams; scale positions (pentatonic boxes, 3 notes per string)
+- ✅ Left-handed fretboard, fret-range zoom, piano keyboard view
+- ✅ Circle of fifths
+- ✅ Ear training (intervals, chord quality, scale degrees, chords in key)
+- ✅ Songs: sections, repeats, lyrics, playback, print/PDF, .txt and .json export, import
+- ✅ Share links (key + progression + tab, or a whole song)
+- ✅ Microphone note detection with tuner
+- ✅ Better sounds: plucked-string guitar, piano, synth
+- ✅ Installable offline app (PWA) on GitHub Pages
 
-- 🔜 **Secondary dominants** (V/ii, V/V, V7/vi…): chords that briefly point at a chord other than I
-- 🔜 **Borrowed chords / modal interchange**: a panel showing chords from the parallel minor (or major) and from the modes
-- 🔜 **Tritone substitution** (♭II7 for V7) and other jazz substitutions
-- 🔜 **Slash chords and inversions** in the progression input (`I/3`, `V/7`)
-- 🔜 **Modulation helper**: pivot chords shared between two keys
-
-## v0.3: Guitar-specific 🔜
-
-- 🔜 **Playable chord shapes / voicings** (CAGED shapes, drop-2, shell voicings) instead of every note on the neck
-- 🔜 **Scale positions** (the 5 pentatonic boxes, 3-notes-per-string)
-- 🔜 Left-handed fretboard and a "show only frets X–Y" zoom
-
-## 💡 Ideas for you to decide on
+## 💡 Ideas for next time
 
 | Idea | Why it might help |
 |---|---|
-| **Ear-training quizzes** (name the interval / chord quality / degree) | Turns knowledge into hearing, the step most self-learners skip |
-| **Song sheet / export**: save a progression with sections (verse, chorus) and print or share it | Actually building out songs, as in the original goal |
-| **Share links**: encode key and progression in the URL | Send a progression to a friend or bandmate |
-| **Microphone note detection**: play a note on your guitar and the app recognises it | Feed the key finder by playing instead of clicking |
-| **Circle of fifths view** | Shows key relationships and why ii–V–I works |
-| **Piano keyboard view** next to the fretboard | Many theory resources use piano layout |
-| **Better sounds** (sampled guitar or piano) | The current synth is functional, not pretty |
-| **Install as an app (PWA)** so it works offline on your phone | Practice anywhere |
+| **Rhythm / strumming patterns** in playback (not just one strum per chord) | Songs sound more like songs |
+| **Melody writer**: put notes over the chords and see which are chord tones | Writing melodies that fit the harmony |
+| **Chord detection from the microphone** (strum a chord, app names it) | Figure out songs by ear faster |
+| **Practice mode for shapes**: the app names a chord, you find it on the neck | Memorising the fretboard |
+| **Voice-leading view**: show how each note moves between chords | The "why" behind smooth progressions |
+| **Sampled instrument sounds** (real recordings) | More realistic than synthesis, at the cost of download size |
+| **Accounts / cloud sync** for songs | Same songs on every device (needs a server, so a bigger step) |

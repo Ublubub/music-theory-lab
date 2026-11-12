@@ -15,7 +15,7 @@ and can do it yourself whenever you want.
 
 ## Where things are
 
-- **On your computer:** the project folder (the one containing `index.html`).
+- **On your computer:** `C:SERSELIU_DOCUMENTSMUSIC-THEORY-LAB`
 - **On GitHub:** `https://github.com/Ublubub/music-theory-lab`
 
 ## Everyday commands
@@ -43,11 +43,11 @@ The typical loop: **edit → `git add -A` → `git commit -m "…"` → `git pus
 
 ## Putting the app online for free (GitHub Pages)
 
-GitHub can host the app as a website at `https://ublubub.github.io/music-theory-lab/`.
+**It is live at https://ublubub.github.io/music-theory-lab/**. Every push to `main` republishes it within a minute or two.
 
-- On a free GitHub account, Pages requires the repo to be **public**.
-- Settings → Pages → *Deploy from a branch* → `main` / `/ (root)` → Save. The site appears a minute later.
-- Or ask Claude to do it.
+- On a free GitHub account, Pages requires the repo to be **public** (it is).
+- It is configured in Settings → Pages → *Deploy from a branch* → `main` / `/ (root)`.
+- Check a deploy in the **Actions** tab ("pages build and deployment").
 
 ## If something goes wrong
 
